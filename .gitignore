@@ -1,0 +1,9 @@
+*~
+*#
+node_modules/
+bower_components/
+_build/
+.baseDir.ts
+.tscache
+tscommand*
+test/
