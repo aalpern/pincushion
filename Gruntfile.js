@@ -30,7 +30,10 @@ module.exports = function(grunt) {
     babel: {
       lib: {
         options: {
-          sourceMap: true
+          sourceMap: true,
+          optional: [
+            'runtime'
+          ]
         },
         files: [{
           expand: true,
