@@ -1,4 +1,5 @@
-declare const require
+declare const require, process
+
 const axios  = require('axios')
 const extend = require('extend')
 const log4js = require('log4js')
@@ -19,6 +20,7 @@ export const Constants = {
 export interface RateLimitInfo {
   limit?: number
   remaining?: number
+  delay_millis?: number
 }
 
 export interface PageInfo {
@@ -30,6 +32,16 @@ export interface Fetcher {
   get(url: string) : Promise<any>
 }
 
+/**
+ * The pinterest API for returning sets of entities is paged, with the
+ * complete URL for fetching the next page conveniently included in
+ * the page info of the response.
+ *
+ * The PagedResponse class includes a reference back to the client
+ * object (via the Fetcher interface), so that all requests will be
+ * made through a single location, which is responsible for managing
+ * rate limiting.
+ */
 export class PagedResponse<T> {
   data: T[]
   page: PageInfo
@@ -51,31 +63,70 @@ export class PagedResponse<T> {
   }
 }
 
+/**
+ * The type returned by Node's high resolution timer
+ * (process.hrtime()) is an array of [second, nanoseconds].
+ */
+type HighResolutionTimer = [number, number]
+
+function milliseconds_since(time: HighResolutionTimer) {
+  let elapsed = process.hrtime(time)
+  return (elapsed[0] * 1000) + (elapsed[1] / 1000000)
+}
+
 export class Client implements Fetcher {
   access_token : string
+  rate_limit : RateLimitInfo
+  throttle : boolean
+  private last_request_time : HighResolutionTimer
 
   constructor(data?) {
     if (data && typeof data === 'string') {
       this.access_token = data
     } else if (data) {
       this.access_token = data.access_token
+      this.throttle = !!data.throttle
     }
   }
 
+  /* ----------------------------------------
+     Fetcher interface
+     ---------------------------------------- */
+
   async get(url: string, params?: any) : Promise<any> {
-    return axios.get(url, {
-      params: extend(params || {}, {
-        access_token: this.access_token
-      })
-    }).then(response => {
-      if (response.headers && response.headers['x-ratelimit-limit']) {
-        let limit = {
-          limit: Number(response.headers['x-ratelimit-limit']),
-          remaining: Number(response.headers['x-ratelimit-remaining'])
+    let p = Promise.resolve()
+
+    if (this.throttle && this.rate_limit) {
+      if (this.last_request_time) {
+        let elapsed = milliseconds_since(this.last_request_time)
+        if (elapsed < this.rate_limit.delay_millis) {
+          log.debug(`Throttling API request. ${elapsed}ms elapsed out of ${this.rate_limit.delay_millis}`)
+          // TODO: actually delay
         }
-        log.info(`Rate limit: ${limit.remaining} of ${limit.limit} for ${response.config.url}`)
       }
-      return response.data
+    }
+
+    if (!this.last_request_time) {
+      this.last_request_time = process.hrtime()
+    }
+
+    return p.then(() => {
+      return axios.get(url, {
+        params: extend(params || {}, {
+          access_token: this.access_token
+        })
+      }).then(response => {
+        if (response.headers && response.headers['x-ratelimit-limit']) {
+          let limit : RateLimitInfo = {
+            limit: Number(response.headers['x-ratelimit-limit']),
+            remaining: Number(response.headers['x-ratelimit-remaining'])
+          }
+          limit.delay_millis = (60 * 60 * 1000) / limit.limit
+          log.info(`Rate limit: ${limit.remaining} of ${limit.limit} (${limit.delay_millis}ms) for ${response.config.url}`)
+          this.rate_limit = limit
+        }
+        return response.data
+      })
     })
   }
 
