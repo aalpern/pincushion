@@ -1,11 +1,13 @@
 declare const require
 
 import * as pinterest from '../pinterest'
-const URI     = require('urijs')
-const fs      = require('file-async')
-const log4js  = require('log4js')
-const log     = log4js.getLogger('pincushion.archive')
+
+const URI    = require('urijs')
+const fs     = require('file-async')
 const exec   = require('child_process').exec
+const log4js = require('log4js')
+const log    = log4js.getLogger('pincushion.archive')
+
 
 export interface ArchiveConstructorOptions {
   access_token: string
@@ -27,7 +29,8 @@ async function download(url: string, dir: string) : Promise<void> {
   return new Promise<void>((resolve, reject) => {
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
-        reject(error)
+        console.warn(error)
+        // reject(error)
       } else {
         resolve()
       }
@@ -69,20 +72,12 @@ export class Archive {
 
   async sync_boards() : Promise<void> {
     let done : boolean = false
-    let boards = await this.client.get_boards(pinterest.Constants.MAX_PAGE_SIZE)
-    while (!done) {
-      log.debug(`Fetched ${boards.data.length} boards`)
-      await write_json(`${this.root}/boards/index.json`, boards.data)
-      for (let board of boards.data) {
-        await this.sync_board(board)
-      }
-      if (boards.has_next()) {
-        boards = await boards.next()
-      } else {
-        done = true
-      }
+    let boards = await this.client.get_all_boards()
+    log.debug(`Fetched ${boards.length} boards`)
+    await write_json(`${this.root}/boards/index.json`, boards)
+    for (let board of boards) {
+      await this.sync_board(board)
     }
-    return Promise.resolve()
   }
 
   async sync_board(board: pinterest.Board) : Promise<void> {
@@ -97,26 +92,20 @@ export class Archive {
     if (board.image) {
       this.sync_images(board_dir, board.image)
     }
-    return this.sync_pins(`${board_dir}/pins`, board)
+    return this.sync_pins(board_dir, board)
   }
 
   async sync_pins(dir: string, board: pinterest.Board) : Promise<void> {
     log.info(`Synchronizing pins for board ${board.name}...`)
+    let pin_dir = `${dir}/pin`
     await fs.ensureDir(dir)
     let done : boolean = false
-    let pins = await this.client.get_pins(board, pinterest.Constants.MAX_PAGE_SIZE)
-    while (!done) {
-      log.debug(`Fetched ${pins.data.length} pins`)
-      for (let pin of pins.data) {
-        await this.sync_pin(dir, pin)
-      }
-      if (pins.has_next()) {
-        pins = await pins.next()
-      } else {
-        done = true
-      }
+    let pins = await this.client.get_all_pins_for_board(board)
+    log.info(`Fetched ${pins.length} pins`)
+    await write_json(`${dir}/pins.json`, pins)
+    for (let pin of pins) {
+      await this.sync_pin(dir, pin)
     }
-    return Promise.resolve()
   }
 
   async sync_pin(dir: string, pin: pinterest.Pin) : Promise<void> {
@@ -150,6 +139,10 @@ export class Archive {
   async download_image(dir: string, size: string, url: string) : Promise<void> {
     let size_dir = `${dir}/${size}`
     await fs.ensureDir(size_dir)
+    if (fs.existsSync(size_dir + '/' + new URI(url).filename())) {
+      log.debug(`Skipping ${url}, already downloaded.`)
+      return Promise.resolve()
+    }
     return download(url, size_dir)
   }
 }

@@ -133,7 +133,7 @@ export class Client implements Fetcher {
           remaining: Number(response.headers['x-ratelimit-remaining'])
         }
         limit.delay_millis = (60 * 60 * 1000) / limit.limit
-        log.info(`Rate limit: ${limit.remaining} of ${limit.limit} (${limit.delay_millis}ms) for ${response.config.url}`)
+        log.debug(`Rate limit: ${limit.remaining} of ${limit.limit} (${limit.delay_millis}ms) for ${response.config.url}`)
         this.rate_limit = limit
       }
       return response.data
@@ -164,6 +164,25 @@ export class Client implements Fetcher {
       fields: model.BoardFields.join(','),
       limit: limit
     }).then(data => new PagedResponse<model.Board>(this, data))
+  }
+
+  /**
+   * Get all the current logged in user's boards, iterating through
+   * all pages and returning a concatenated list of the results.
+   */
+  async get_all_boards() : Promise<model.Board[]> {
+    let done : boolean = false
+    let boards : model.Board[] = []
+    let batch = await this.get_boards(Constants.MAX_PAGE_SIZE)
+    while (!done) {
+      boards.push(...batch.data)
+      if (batch.has_next()) {
+        batch = await batch.next()
+      } else {
+        done = true
+      }
+    }
+    return boards
   }
 
   /**
@@ -216,6 +235,26 @@ export class Client implements Fetcher {
     return this.get(`${Constants.API_ROOT}/boards/${id}/pins/`, {
       fields: model.PinFields.join(',')
     }).then(data => new PagedResponse<model.Pin>(this, data))
+  }
+
+  /**
+   * Get all the pins for a specific board, iterating through the
+   * paged responses and returning a concatenated array of all of
+   * them.
+   */
+  async get_all_pins_for_board(board: model.Board|string) : Promise<model.Pin[]> {
+    let done : boolean = false
+    let pins : model.Pin[] = []
+    let batch = await this.get_pins(board, Constants.MAX_PAGE_SIZE)
+    while (!done) {
+      pins.push(...batch.data)
+      if (batch.has_next()) {
+        batch = await batch.next()
+      } else {
+        done = true
+      }
+    }
+    return pins
   }
 
   /**
