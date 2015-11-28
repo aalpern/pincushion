@@ -3,6 +3,7 @@
 node_modules/
 bower_components/
 _build/
+_archive/
 .baseDir.ts
 .tscache
 tscommand*

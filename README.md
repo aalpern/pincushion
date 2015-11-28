@@ -3,9 +3,35 @@
 A utility for archiving your Pinterest boards for offline access. Uses
 the [offical Pinterest API](https://developers.pinterest.com/docs/getting-started/introduction/).
 
-### API Client
+## Usage
 
-#### Implemented methods
+TBD.
+
+## Archive Format
+
+```
+/user/index.json
+/user/index.html
+/user/images
+/boards/index.json
+/boards/index.html
+/boards/<board>/index.json
+/boards/<board>/index.html
+/boards/<board>/images/
+/boards/<board>/pins/
+/boards/<board>/pins/<pin>/index.json
+/boards/<board>/pins/<pin>/index.html
+/boards/<board>/pins/<pin>/images
+```
+
+## API Client
+
+The Pinterest API client code lives in `src/ts/client`, and currently
+only implements read-only GET functionality. All methods are
+asynchronous, and can automatically throttle themselves to abide by
+the API's rate-limiting (although this is off by default).
+
+### Implemented methods
 
 * [x] `GET /v1/me/`
 * [x] `GET /v1/me/pins/`

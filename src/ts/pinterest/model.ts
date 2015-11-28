@@ -8,7 +8,7 @@ export interface Image {
   url: string
   width: number
   height: number
-Board}
+}
 
 export interface Creator {
   url?: string
@@ -90,7 +90,7 @@ export interface Pin {
   created_at?: string
   creator?: Creator
   id?: string
-  image?: Image
+  image?: ImageDictionary
   link?: string
   media?: StringDictionary
   metadata?: ObjectDictionary

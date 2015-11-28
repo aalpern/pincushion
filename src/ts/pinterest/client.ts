@@ -118,10 +118,14 @@ export class Client implements Fetcher {
 
     this.last_request_time = process.hrtime()
 
-    return axios.get(url, {
-      params: extend(params || {}, {
+    let p = extend(params || {}, {
         access_token: this.access_token
-      })
+    })
+    if (url.includes('access_token'))
+      delete p['access_token']
+
+    return axios.get(url, {
+      params: p
     }).then(response => {
       if (response.headers && response.headers['x-ratelimit-limit']) {
         let limit : RateLimitInfo = {
@@ -134,6 +138,9 @@ export class Client implements Fetcher {
       }
       return response.data
     })
+      .catch(error => {
+        log.error(error)
+      })
   }
 
   /* ----------------------------------------
@@ -146,7 +153,7 @@ export class Client implements Fetcher {
   async get_user() : Promise<model.User> {
     return this.get(`${Constants.API_ROOT}/me/`, {
       fields: model.UserFields.join(',')
-    })
+    }).then(body => body.data)
   }
 
   /**
@@ -217,7 +224,7 @@ export class Client implements Fetcher {
   async get_pin(id: string) : Promise<model.Pin> {
     return this.get(`${Constants.API_ROOT}/pins/${id}/`, {
       fields: model.PinFields.join(',')
-    })
+    }).then(body => body.data)
   }
 
   /**
@@ -226,7 +233,7 @@ export class Client implements Fetcher {
   async get_board(board_spec: string) : Promise<model.Board> {
     return this.get(`${Constants.API_ROOT}/boards/${board_spec}/`, {
       fields: model.BoardFields.join(',')
-    })
+    }).then(body => body.data)
   }
 
   /**

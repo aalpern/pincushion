@@ -31,12 +31,16 @@
     "babel-core": "5.8.25"
   },
   "dependencies": {
+    "urijs": "^1.16.1",
     "axios": "0.7.0",
     "babel-runtime": "5.8.25",
     "extend": "^3.0.0",
+    "file-async": "^0.1.4",
     "inquirer": "0.11.0",
     "keytar": "3.0.0",
     "log4js": "0.6.28",
-    "regenerator": "0.8.42"
+    "regenerator": "0.8.42",
+    "request": "^2.67.0",
+    "request-promise": "^1.0.2"
   }
 }
