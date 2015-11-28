@@ -122,7 +122,7 @@ export class Archive {
     let pin_dir = `${dir}/${pin.id}`
     await write_json(`${pin_dir}/index.json`, pin)
     if (pin.image) {
-      this.sync_images(dir, pin.image)
+      this.sync_images(pin_dir, pin.image)
     }
   }
 
@@ -133,10 +133,12 @@ export class Archive {
       this.download_image(image_dir, size, images[size].url)
     }
     if (images['60x60']) {
+      log.debug('Checking additional sizes...')
       let additional_sizes = [ '400x300' ]
       for (let size of additional_sizes) {
-        if (!sizes[size]) {
-          let url = images[sizes['60x60']].url.replace('60x60', size)
+        if (!images[size]) {
+          log.debug(`Trying additional size ${size}`)
+          let url = images['60x60'].url.replace('60x60', size)
           this.download_image(image_dir, size, url)
         }
       }
