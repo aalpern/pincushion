@@ -8,6 +8,29 @@ const log    = log4js.getLogger('pincushon.client')
 import * as model from './model'
 
 /* -----------------------------------------------------------------------------
+   Timer utils
+   ----------------------------------------------------------------------------- */
+
+/**
+ * The type returned by Node's high resolution timer
+ * (process.hrtime()) is an array of [second, nanoseconds].
+ */
+type HighResolutionTimer = [number, number]
+
+function milliseconds_since(time: HighResolutionTimer) {
+  let elapsed = process.hrtime(time)
+  return (elapsed[0] * 1000) + (elapsed[1] / 1000000)
+}
+
+function delay(millis: number) : Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve()
+    }, millis)
+  })
+}
+
+/* -----------------------------------------------------------------------------
    API types
    ----------------------------------------------------------------------------- */
 
@@ -61,25 +84,6 @@ export class PagedResponse<T> {
     return this.fetcher.get(this.page.next)
       .then(response => new PagedResponse<T>(this.fetcher, response))
   }
-}
-
-/**
- * The type returned by Node's high resolution timer
- * (process.hrtime()) is an array of [second, nanoseconds].
- */
-type HighResolutionTimer = [number, number]
-
-function milliseconds_since(time: HighResolutionTimer) {
-  let elapsed = process.hrtime(time)
-  return (elapsed[0] * 1000) + (elapsed[1] / 1000000)
-}
-
-function delay(millis: number) : Promise<void> {
-  return new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve()
-    }, millis)
-  })
 }
 
 export class Client implements Fetcher {
