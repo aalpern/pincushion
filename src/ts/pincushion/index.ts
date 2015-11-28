@@ -58,10 +58,11 @@ export class Archive {
 
   async sync_user() : Promise<pinterest.User> {
     log.debug('Synchronizing user...')
+    let user_dir = `${this.root}/user`
     let user = await this.client.get_user()
-    await write_json(`${this.root}/user/index.json`, user)
+    await write_json(`${user_dir}/index.json`, user)
     if (user.image) {
-      this.sync_images(`${this.root}/user/images`, user.image)
+      this.sync_images(user_dir, user.image)
     }
     return user
   }
