@@ -74,6 +74,14 @@ function milliseconds_since(time: HighResolutionTimer) {
   return (elapsed[0] * 1000) + (elapsed[1] / 1000000)
 }
 
+function delay(millis: number) : Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve()
+    }, millis)
+  })
+}
+
 export class Client implements Fetcher {
   access_token : string
   rate_limit : RateLimitInfo
@@ -94,39 +102,33 @@ export class Client implements Fetcher {
      ---------------------------------------- */
 
   async get(url: string, params?: any) : Promise<any> {
-    let p = Promise.resolve()
-
     if (this.throttle && this.rate_limit) {
       if (this.last_request_time) {
         let elapsed = milliseconds_since(this.last_request_time)
         if (elapsed < this.rate_limit.delay_millis) {
           log.debug(`Throttling API request. ${elapsed}ms elapsed out of ${this.rate_limit.delay_millis}`)
-          // TODO: actually delay
+          await delay(this.rate_limit.delay_millis - elapsed)
         }
       }
     }
 
-    if (!this.last_request_time) {
-      this.last_request_time = process.hrtime()
-    }
+    this.last_request_time = process.hrtime()
 
-    return p.then(() => {
-      return axios.get(url, {
-        params: extend(params || {}, {
-          access_token: this.access_token
-        })
-      }).then(response => {
-        if (response.headers && response.headers['x-ratelimit-limit']) {
-          let limit : RateLimitInfo = {
-            limit: Number(response.headers['x-ratelimit-limit']),
-            remaining: Number(response.headers['x-ratelimit-remaining'])
-          }
-          limit.delay_millis = (60 * 60 * 1000) / limit.limit
-          log.info(`Rate limit: ${limit.remaining} of ${limit.limit} (${limit.delay_millis}ms) for ${response.config.url}`)
-          this.rate_limit = limit
-        }
-        return response.data
+    return axios.get(url, {
+      params: extend(params || {}, {
+        access_token: this.access_token
       })
+    }).then(response => {
+      if (response.headers && response.headers['x-ratelimit-limit']) {
+        let limit : RateLimitInfo = {
+          limit: Number(response.headers['x-ratelimit-limit']),
+          remaining: Number(response.headers['x-ratelimit-remaining'])
+        }
+        limit.delay_millis = (60 * 60 * 1000) / limit.limit
+        log.info(`Rate limit: ${limit.remaining} of ${limit.limit} (${limit.delay_millis}ms) for ${response.config.url}`)
+        this.rate_limit = limit
+      }
+      return response.data
     })
   }
 
