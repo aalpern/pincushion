@@ -71,18 +71,6 @@ module.exports = function(grunt) {
       }
     },
 
-    /**
-     * Create a bundle of the library and dependencies for in-browser
-     * testing.
-     */
-    browserify: {
-      bundle: {
-        files: {
-          '_build/bundle.js' : [ '_build/es5/index.js' ]
-        }
-      }
-    },
-
     watch: {
       lib: {
         files: SOURCE_FILES,
