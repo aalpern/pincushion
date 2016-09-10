@@ -216,6 +216,25 @@ export class Client implements Fetcher {
   }
 
   /**
+   * Get all of the current logged in user's liked pins, returning the
+   * concatenated batches.
+   */
+  async get_all_liked_pins() : Promise<model.Pin[]> {
+    let done : boolean = false
+    let pins : model.Pin[] = []
+    let batch = await this.get_liked_pins(Constants.MAX_PAGE_SIZE)
+    while (!done) {
+      pins.push(...batch.data)
+      if (batch.has_next()) {
+        batch = await batch.next()
+      } else {
+        done = true
+      }
+    }
+    return pins
+  }
+
+  /**
    * Get all of the current logged in user's pins.
    */
   async get_all_pins(limit?: number) : Promise<PagedResponse<model.Pin>> {
