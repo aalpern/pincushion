@@ -16,12 +16,13 @@ TBD.
 /boards/index.json
 /boards/index.html
 /boards/<board>/index.json
+/boards/<board>/pins.json
 /boards/<board>/index.html
 /boards/<board>/images/
-/boards/<board>/pins/
-/boards/<board>/pins/<pin>/index.json
-/boards/<board>/pins/<pin>/index.html
-/boards/<board>/pins/<pin>/images
+/boards/<board>/pin/
+/boards/<board>/pin/<pin>/index.json
+/boards/<board>/pin/<pin>/index.html
+/boards/<board>/pin/<pin>/images
 ```
 
 ## API Client
