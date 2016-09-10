@@ -19,7 +19,7 @@ module.exports = function(grunt) {
           target: 'es6',
           comments: true,
           declaration: true,
-          additionalFlags: '--moduleResolution node --experimentalAsyncFunctions'
+          additionalFlags: '--moduleResolution node'
         }
       }
     },
@@ -31,8 +31,8 @@ module.exports = function(grunt) {
       lib: {
         options: {
           sourceMap: true,
-          optional: [
-            'runtime'
+          presets: [
+            'es2015'
           ]
         },
         files: [{
